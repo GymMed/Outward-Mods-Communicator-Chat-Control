@@ -21,7 +21,7 @@ namespace OutwardModsCommunicatorChatControl.Events.Publishers
                     { "event", ("Event name to look up.", null) }
                 },
                 [ChatCommandsManagerParamsHelper.Get(ChatCommandsManagerParams.CommandAction).key] = function,
-                [ChatCommandsManagerParamsHelper.Get(ChatCommandsManagerParams.CommandDescription).key] = "Gets detailed information about a specific event."
+                [ChatCommandsManagerParamsHelper.Get(ChatCommandsManagerParams.CommandDescription).key] = "Gets detailed information about a specific event, including proper type information for collections (HashSet, List, arrays), enums, and other supported types."
             };
 
             EventBus.Publish(EventBusPublisher.ChatCommands_Listener, EventBusPublisher.Event_AddCommand, payload);

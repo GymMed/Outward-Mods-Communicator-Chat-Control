@@ -31,7 +31,7 @@ namespace OutwardModsCommunicatorChatControl
         // Choose a NAME for your project, generally the same as your Assembly Name.
         public const string NAME = "Mods Communicator Chat Control";
         // Increment the VERSION when you release a new version of your mod.
-        public const string VERSION = "0.0.1";
+        public const string VERSION = "0.0.2";
 
         // Choose prefix for log messages for quicker search and readablity
         public static string prefix = "[Mods-Communicator-Chat-Control]";

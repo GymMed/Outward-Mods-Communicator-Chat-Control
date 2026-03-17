@@ -22,7 +22,7 @@ namespace OutwardModsCommunicatorChatControl.Events.Publishers
                     { "event", ("Event name.", null) }
                 },
                 [ChatCommandsManagerParamsHelper.Get(ChatCommandsManagerParams.CommandAction).key] = function,
-                [ChatCommandsManagerParamsHelper.Get(ChatCommandsManagerParams.CommandDescription).key] = "Publishes an event to OutwardModsCommunicator. Requires debug mode.",
+                [ChatCommandsManagerParamsHelper.Get(ChatCommandsManagerParams.CommandDescription).key] = "Publishes an event to OutwardModsCommunicator with proper type casting for collections (HashSet, List, arrays), enums, and other types. Usage: /publish [mod] event [--param=value...]",
                 [ChatCommandsManagerParamsHelper.Get(ChatCommandsManagerParams.CommandRequiresDebugMode).key] = true,
                 //[ChatCommandsManagerParamsHelper.Get(ChatCommandsManagerParams.IsCheatCommand).key] = true,
             };
@@ -86,20 +86,32 @@ namespace OutwardModsCommunicatorChatControl.Events.Publishers
                 if (paramName == "mod" || paramName == "event")
                     continue;
 
-                // If param is in registered schema, validate and parse
+                // If param is in registered schema, validate and parse with proper type casting
                 if (registeredParams.Contains(paramName))
                 {
                     Type paramType = eventDef.Schema.Fields[paramName];
-                    if (EventArgumentParser.TryParse(paramType, stringValue, out object parsedValue))
+                    var (success, parsedValue, error) = EventArgumentParser.TryParseWithDetails(paramType, stringValue);
+                    
+                    if (success)
                     {
                         payload[paramName] = parsedValue;
                     }
                     else
                     {
-                        errors.Add($"Cannot parse '{stringValue}' for parameter '{paramName}' as {paramType.Name}");
+                        errors.Add($"Parameter '{paramName}' ({paramType.Name}): {error ?? "Unknown error"}");
                     }
                 }
-                // If param is NOT in registered schema, silently ignore (user freedom)
+                // If param is NOT in registered schema, try to auto-detect type and add dynamically
+                else
+                {
+                    var autoDetectedValue = TryAutoDetectAndParse(stringValue);
+                    if (autoDetectedValue != null)
+                    {
+                        payload[paramName] = autoDetectedValue;
+                        ChatHelpers.SendChatLog(panel, $"Dynamic parameter '{paramName}' auto-detected as {autoDetectedValue.GetType().Name}", ChatLogStatus.Info);
+                    }
+                    // Silently ignore unknown parameters (user freedom)
+                }
             }
 
             if (errors.Count > 0)
@@ -113,6 +125,47 @@ namespace OutwardModsCommunicatorChatControl.Events.Publishers
 
             EventBus.Publish(foundNamespace, eventName, payload);
             ChatHelpers.SendChatLog(panel, $"Published event '{foundNamespace}.{eventName}'", ChatLogStatus.Success);
+        }
+
+        /// <summary>
+        /// Attempts to auto-detect the type of a value string and parse it accordingly.
+        /// Returns null if unable to detect/parse.
+        /// </summary>
+        private static object TryAutoDetectAndParse(string valueString)
+        {
+            if (string.IsNullOrWhiteSpace(valueString))
+                return null;
+
+            valueString = valueString.Trim();
+
+            // Try as string array first (space-separated)
+            var parts = valueString.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length > 1)
+            {
+                // Try as int array
+                if (parts.All(p => int.TryParse(p, out _)))
+                {
+                    var intArray = new int[parts.Length];
+                    for (int i = 0; i < parts.Length; i++)
+                    {
+                        int.TryParse(parts[i], out intArray[i]);
+                    }
+                    return intArray;
+                }
+
+                // Default to string array
+                return parts;
+            }
+
+            // Single value - try int first, then string
+            if (int.TryParse(valueString, out int intValue))
+                return intValue;
+
+            if (bool.TryParse(valueString, out bool boolValue))
+                return boolValue;
+
+            // Default to string
+            return valueString;
         }
 
         private static void SendUsageError(ChatPanel panel)

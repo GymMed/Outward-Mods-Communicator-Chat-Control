@@ -1,6 +1,6 @@
 {
 	"name": "Mods_Communicator_Chat_Control",
-	"version_number": "0.0.1",
+	"version_number": "0.0.2",
 	"website_url": "https://github.com/GymMed/Outward-Mods-Communicator-Chat-Control",
 	"description": "Provides access to Mods Communicator through chat. Allows to publish events in a similar way like mods.",
 	"dependencies": [

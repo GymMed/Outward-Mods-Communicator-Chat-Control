@@ -56,7 +56,10 @@ Gets detailed information about a specific event including its parameters and ty
 
 <details>
     <summary>/publish</summary>
-Publishes an event to OutwardModsCommunicator. Allows dynamic parameter passing.<br>
+Publishes an event to OutwardModsCommunicator directly from chat. Parameters are dynamically parsed based on the event's registered schema in Mods Communicator.<br>
+
+<b>How it works:</b>
+The mod reads the registered event parameters from Mods Communicator and automatically parses your chat input to match the expected types. If a parameter type cannot be parsed from a string (like functions or delegates), it will be skipped. Unregistered parameters are silently ignored, giving you flexibility.<br>
 
 <b>Usage:</b>
 <code>/publish gymmed.loot_manager_* LootRulesSerializer@SaveLootRulesToXml</code><br>
@@ -66,10 +69,18 @@ Publishes an event to OutwardModsCommunicator. Allows dynamic parameter passing.
 <code>/publish --event=AddLoot --itemId=4300040 --faction=Deer</code><br>
 
 <b>Supported Types:</b>
-- Primitives: string, int, float, bool, double, long, decimal
+- Primitives: string, int, float, bool, double, long, decimal, char
 - Enums: Any game enum (e.g., Character.Factions.Bandits, Character.Factions.Deer)
-- Nullable&lt;T&gt;: Optional enum/primitive types
-- Arrays: Space-separated values (e.g., --names="Sword Shield")
+- Nullable&lt;T&gt;: Optional enum/primitive types (e.g., Nullable&lt;Character.Factions&gt;)
+- IEnumerable/ICollection: Space-separated values (e.g., --names="Sword Shield" becomes List&lt;string&gt;)
+- Arrays: Space-separated values (e.g., --ids="4300040 4300041")
+
+<b>Notes:</b>
+- Parameters can be passed positionally (in order) or by name (--param=value)
+- If mod namespace is omitted, searches all registered mods for the event
+- If a value cannot be parsed to the expected type, an error is shown and the event is NOT published
+- Unregistered parameters (not defined in the event schema) are silently dropped - they are not added to the event payload
+- Each mod is responsible for validating and handling the received data in their own event handlers
 </details>
 
 ## How to set up
